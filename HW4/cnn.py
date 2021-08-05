@@ -58,21 +58,14 @@ def loss_cross_entropy_softmax(x, y):
 
 def relu(x):
     # TO DO
-    # zeros = np.zeros(x.shape)
-    # y = np.maximum(zeros, x)
-    
-    r = lambda x:(x*(x>0))
-    y = r(x)
+    zeros = np.zeros(x.shape)
+    y = np.maximum(zeros, x)
     return y
 
 
 def relu_backward(dl_dy, x, y):
     # TO DO
-    # dl_dx = dl_dy * (y > 0)
-    
-    boo = (y>=0)*1
-    dl_dx = dl_dy * (boo)
-    
+    dl_dx = dl_dy * (y >= 0)
     return dl_dx
 
 def im2col(x,ww,hh,stride):
@@ -333,10 +326,10 @@ def train_cnn(mini_batch_x, mini_batch_y):
 
 
 if __name__ == '__main__':
-    # main.main_slp_linear()
-    # main.main_slp()
+    main.main_slp_linear()
+    main.main_slp()
     main.main_mlp()
-    # main.main_cnn()
+    main.main_cnn()
 
 
 

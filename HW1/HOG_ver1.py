@@ -224,7 +224,7 @@ def face_recognition(I_target, I_template):
             heat_map[i, j] = heat_map_value
             if heat_map_value >= 0.01 and i < 40:
                 print('Bounding box detected')
-                bounding_boxes_row = np.array([j, i, heat_map_value])# *30])
+                bounding_boxes_row = np.array([j, i, heat_map_value] * 30])
                 bounding_boxes = np.vstack((bounding_boxes, bounding_boxes_row))
         print(i)
     plt.imshow(heat_map, cmap='hot', interpolation='nearest')

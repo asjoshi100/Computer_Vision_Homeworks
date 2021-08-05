@@ -14,21 +14,21 @@ def find_match(img1, img2):
     # TO DO
     # Calculating sift for img1 and img2
     sift1 = cv2.xfeatures2d.SIFT_create()
-    kp1, des1 = sift1.detectAndCompute(img1,None)
+    kp1, des1 = sift1.detectAndCompute(img1, None)
     
     sift2 = cv2.xfeatures2d.SIFT_create()
-    kp2, des2 = sift2.detectAndCompute(img2,None)
+    kp2, des2 = sift2.detectAndCompute(img2, None)
     
     # NearestNeighbors similar to HW2
-    neigh = NearestNeighbors(n_neighbors=2)
+    neigh = NearestNeighbors(n_neighbors = 2)
     neigh.fit(des2)
-    kp_required = neigh.kneighbors(des1,2,return_distance = True)
+    kp_required = neigh.kneighbors(des1, 2, return_distance = True)
     df1 = pd.DataFrame(kp_required[0])
     df2 = pd.DataFrame(kp_required[1])
     df_all = pd.concat([df1, df2], axis=1)
-    df_all.columns = list(['d1','d2','x','y'])
+    df_all.columns = list(['d1', 'd2', 'x', 'y'])
     df_all['ratio'] = df_all['d1']/df_all['d2']
-    dfkp = df_all[df_all['ratio']<.75]
+    dfkp = df_all[df_all['ratio'] < .75]
     x1_kp = pd.Series(kp1)[dfkp.index.values]
     x1_kp = x1_kp.values
     x2_kp = pd.Series(kp2)[dfkp['x']]
@@ -37,14 +37,13 @@ def find_match(img1, img2):
     x2 = [x2_kp[idx].pt for idx in range(0, len(x2_kp))]
     pts1 = np.array(x1)
     pts2 = np.array(x2)
-    
     return pts1, pts2
 
 
 def compute_F(pts1, pts2):
     # TO DO
     total_iter = 10000;
-    inlines = np.zeros((total_iter,1));
+    inlines = np.zeros((total_iter, 1));
     F_matrix = [];
     iter_numb = 0;
     threshold = 0.01;
@@ -59,16 +58,15 @@ def compute_F(pts1, pts2):
             A_temp = [pts1[i,0]*pts2[i,0], pts1[i,1]*pts2[i,0], pts2[i,0], pts1[i,0]*pts2[i,1], pts1[i,1]*pts2[i,1], pts2[i,1], pts1[i,0], pts1[i,1], 1.0]
             A_mat.append(A_temp) 
         A_mat = np.array(A_mat)
-        fn = null_space(A_mat)[:,0]
-        f_mat = fn.reshape((3,3))
+        f_mat = null_space(A_mat)[:,0].reshape((3,3))
         f_mat = f_mat/f_mat[2,2]
         [U,D,V] = svd(f_mat)
         D[2] = 0
-        mod_f = U@np.diag(D) @ V
+        mod_f = U @ np.diag(D) @ V
         for i in range(0, rand_numb):
-            u = np.array([pts1[i,0],pts1[i,1],1])
-            v = np.array([pts2[i,0],pts2[i,1],1])
-            err = (v.T) @ mod_f @ u
+            # u = np.array([pts1[i,0], pts1[i,1],1])
+            # v = np.array([pts2[i,0], pts2[i,1],1])
+            err = ((np.array([pts2[i,0], pts2[i,1],1])).T) @ mod_f @ (np.array([pts1[i,0], pts1[i,1],1]))
             if(np.abs(err) < threshold):
                 flag = flag + 1
         inlines[iter_numb] = flag
@@ -98,9 +96,9 @@ def disambiguate_pose(Rs, Cs, pts3Ds):
         P_3D = pts3Ds[i]
         flag = 0
         for j in range(0, len(P_3D)):
-            c_temp = R[2,:] @ ((P_3D[j,:] - C.T).T)
+            c_temp = R[2,:] @ ((P_3D[j, :] - C.T).T)
             if (c_temp > 0):
-                flag = flag +1
+                flag = flag + 1
         XYZ.append(flag)
     R = Rs[np.argmax(XYZ)]
     C = Cs[np.argmax(XYZ)]
@@ -111,10 +109,10 @@ def disambiguate_pose(Rs, Cs, pts3Ds):
 def compute_rectification(K, R, C):
     # TO DO
     rx_t = (C/np.linalg.norm(C)).T
-    rz_tilde = np.array([[0],[0],[1]])
+    rz_tilde = np.array([[0], [0], [1]])
     rz = (rz_tilde - ((rz_tilde.T @ rx_t.T) * rx_t.T))/np.linalg.norm(rz_tilde - ((rz_tilde.T @ rx_t.T) * rx_t.T))
-    ry = np.cross(rz.T,rx_t).T
-    R_rect = np.vstack((rx_t,ry.T,rz.T))
+    ry = np.cross(rz.T, rx_t).T
+    R_rect = np.vstack((rx_t, ry.T, rz.T))
     H1 = K @ R_rect @ np.linalg.inv(K)
     H2 = K @ R_rect @ R.T @ np.linalg.inv(K)
     return H1, H2
@@ -126,7 +124,7 @@ def dense_match(img1, img2):
     kps = []
     h = np.shape(img1)[0]
     l = np.shape(img1)[1]
-    X,Y = np.meshgrid(range(img1.shape[1]),range(img1.shape[0]),indexing='ij')
+    X,Y = np.meshgrid(range(img1.shape[1]), range(img1.shape[0]), indexing='ij')
     XYZ_ind = np.array([X,Y]).T
     for i in range(np.shape(img1)[0]):
         for j in range(np.shape(img2)[1]):
@@ -144,7 +142,7 @@ def dense_match(img1, img2):
     for i in range(np.shape(img1)[0]):
         for j in range(np.shape(img1)[1]):
             t1 = np.reshape(des1_new[i,j], (1,128))
-            t2 = des2_new[i,0:j+1]
+            t2 = des2_new[i, 0:j+1]
             pixel_descriptor = np.linalg.norm((t2 - t1), axis=1)
             index = np.where(pixel_descriptor == pixel_descriptor.min())[0]
             disparity[i,j] = np.abs(index-j).min()
@@ -325,37 +323,37 @@ if __name__ == '__main__':
     F = compute_F(pts1, pts2)
     visualize_epipolar_lines(F, pts1, pts2, img_left, img_right)
 
-    # # Step 3: computes four sets of camera poses
-    # K = np.array([[350, 0, 960/2], [0, 350, 540/2], [0, 0, 1]])
-    # Rs, Cs = compute_camera_pose(F, K)
-    # visualize_camera_poses(Rs, Cs)
+    # Step 3: computes four sets of camera poses
+    K = np.array([[350, 0, 960/2], [0, 350, 540/2], [0, 0, 1]])
+    Rs, Cs = compute_camera_pose(F, K)
+    visualize_camera_poses(Rs, Cs)
 
-    # # Step 4: triangulation
-    # pts3Ds = []
-    # P1 = K @ np.hstack((np.eye(3), np.zeros((3, 1))))
-    # for i in range(len(Rs)):
-    #     P2 = K @ np.hstack((Rs[i], -Rs[i] @ Cs[i]))
-    #     pts3D = triangulation(P1, P2, pts1, pts2)
-    #     pts3Ds.append(pts3D)
-    # visualize_camera_poses_with_pts(Rs, Cs, pts3Ds)
+    # Step 4: triangulation
+    pts3Ds = []
+    P1 = K @ np.hstack((np.eye(3), np.zeros((3, 1))))
+    for i in range(len(Rs)):
+        P2 = K @ np.hstack((Rs[i], -Rs[i] @ Cs[i]))
+        pts3D = triangulation(P1, P2, pts1, pts2)
+        pts3Ds.append(pts3D)
+    visualize_camera_poses_with_pts(Rs, Cs, pts3Ds)
 
-    # # Step 5: disambiguate camera poses
-    # R, C, pts3D = disambiguate_pose(Rs, Cs, pts3Ds)
+    # Step 5: disambiguate camera poses
+    R, C, pts3D = disambiguate_pose(Rs, Cs, pts3Ds)
 
-    # # Step 6: rectification
-    # H1, H2 = compute_rectification(K, R, C)
-    # img_left_w = cv2.warpPerspective(img_left, H1, (img_left.shape[1], img_left.shape[0]))
-    # img_right_w = cv2.warpPerspective(img_right, H2, (img_right.shape[1], img_right.shape[0]))
-    # visualize_img_pair(img_left_w, img_right_w)
+    # Step 6: rectification
+    H1, H2 = compute_rectification(K, R, C)
+    img_left_w = cv2.warpPerspective(img_left, H1, (img_left.shape[1], img_left.shape[0]))
+    img_right_w = cv2.warpPerspective(img_right, H2, (img_right.shape[1], img_right.shape[0]))
+    visualize_img_pair(img_left_w, img_right_w)
 
-    # # Step 7: generate disparity map
-    # img_left_w = cv2.resize(img_left_w, (int(img_left_w.shape[1] / 2), int(img_left_w.shape[0] / 2)))  # resize image for speed
-    # img_right_w = cv2.resize(img_right_w, (int(img_right_w.shape[1] / 2), int(img_right_w.shape[0] / 2)))
-    # img_left_w = cv2.cvtColor(img_left_w, cv2.COLOR_BGR2GRAY)  # convert to gray scale
-    # img_right_w = cv2.cvtColor(img_right_w, cv2.COLOR_BGR2GRAY)
-    # disparity = dense_match(img_left_w, img_right_w)
-    # visualize_disparity_map(disparity)
+    # Step 7: generate disparity map
+    img_left_w = cv2.resize(img_left_w, (int(img_left_w.shape[1] / 2), int(img_left_w.shape[0] / 2)))  # resize image for speed
+    img_right_w = cv2.resize(img_right_w, (int(img_right_w.shape[1] / 2), int(img_right_w.shape[0] / 2)))
+    img_left_w = cv2.cvtColor(img_left_w, cv2.COLOR_BGR2GRAY)  # convert to gray scale
+    img_right_w = cv2.cvtColor(img_right_w, cv2.COLOR_BGR2GRAY)
+    disparity = dense_match(img_left_w, img_right_w)
+    visualize_disparity_map(disparity)
 
-    # # save to mat
-    # sio.savemat('stereo.mat', mdict={'pts1': pts1, 'pts2': pts2, 'F': F, 'pts3D': pts3D, 'H1': H1, 'H2': H2,
-    #                                   'img_left_w': img_left_w, 'img_right_w': img_right_w, 'disparity': disparity})
+    # save to mat
+    sio.savemat('stereo.mat', mdict={'pts1': pts1, 'pts2': pts2, 'F': F, 'pts3D': pts3D, 'H1': H1, 'H2': H2,
+                                      'img_left_w': img_left_w, 'img_right_w': img_right_w, 'disparity': disparity})
